@@ -1,55 +1,35 @@
 // genericsWithInterfaces demonstrates how interfaces can be used to achieve generic-like behavior.
 package main
 
-import "fmt"
+import "errors"
 
-// Comparable is our 'generic' type
-type Comparable interface {
-	CompareTo(Comparable) int
-	Metric() int
+// Item is a 'generic' item type
+type Item interface{}
+
+// Container is our 'generic' container type
+type Container interface {
+	Put(Item)
+	Get() Item
 }
 
-// CString is a comparable string.
-type CString string
+// StringContainer is a 'string instance' of Container
+type StringContainer struct {
+	s []string
+}
 
-// CompareTo compares the lengths of s and c.
-func (s CString) CompareTo(c Comparable) int {
-	if s.Metric() < c.Metric() {
-		return -1
-	} else if s.Metric() == c.Metric() {
-		return 0
+// Put adds an Item to the container, converting it into a string.
+func (c *StringContainer) Put(i Item) error {
+	s, ok = i.(string)
+	if !ok {
+		return errors.New("Wrong type. Expected: string, got: %s" + reflect.Type(i))
 	}
-	return 1
 }
 
-// Metric returns the length of the string.
-func (s CString) Metric() int {
-	return len(s)
-}
-
-// DeepSkyObject also iplements Comparable.
-type DeepSkyObject struct {
-	Name     string
-	Distance int
-}
-
-// CompareTo compares two DeepSkyObjects by distance.
-func (d1 DeepSkyObject) CompareTo(d2 Comparable) int {
-	if d1.Distance < d2.Metric() {
-		return -1
-	} else if d1.Distance == d2.Metric() {
-		return 0
-	}
-	return 1
-}
-
-// Metric() returns a value for comparison
-func (d DeepSkyObject) Metric() int {
-	return d.Distance
+func (c *StringContainer) Get() Item {
+	return s
 }
 
 func main() {
-	a := DeepSkyObject{"Hyades", 46}
-	b := DeepSkyObject{"Andromeda", 778000}
-	fmt.Printf("%s compared to %s: %d\n", a.Name, b.Name, a.CompareTo(b))
+	c := &StringContainer{}
+
 }
