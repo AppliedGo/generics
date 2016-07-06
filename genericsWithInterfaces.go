@@ -9,14 +9,25 @@ type Comparable interface {
 	Metric() int
 }
 
-// SortedList is a 'generic' list that holds anything that satisfies the Comparable interface
-type SortedList []Comparable
+// CString is a comparable string.
+type CString string
 
-func (s *SortedList) Sort() {
-	// TODO
+// CompareTo compares the lengths of s and c.
+func (s CString) CompareTo(c Comparable) int {
+	if s.Metric() < c.Metric() {
+		return -1
+	} else if s.Metric() == c.Metric() {
+		return 0
+	}
+	return 1
 }
 
-// DeepSkyObject is a type that implements Comparable.
+// Metric returns the length of the string.
+func (s CString) Metric() int {
+	return len(s)
+}
+
+// DeepSkyObject also iplements Comparable.
 type DeepSkyObject struct {
 	Name     string
 	Distance int
@@ -40,6 +51,5 @@ func (d DeepSkyObject) Metric() int {
 func main() {
 	a := DeepSkyObject{"Hyades", 46}
 	b := DeepSkyObject{"Andromeda", 778000}
-	c := SortedList{a, b}
-	fmt.Printf("%s compared to %s: %d\n", a.Name, b.Name, c[0].CompareTo(c[1]))
+	fmt.Printf("%s compared to %s: %d\n", a.Name, b.Name, a.CompareTo(b))
 }
