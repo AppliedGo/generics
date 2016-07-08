@@ -124,9 +124,29 @@ An excellent real-life, production-proof, industry-ready example is right in the
 
 ### 3. Use interfaces
 
-If you
+Interfaces define behavior without requiring any implementation details. This is ideal for defining 'generic' behavior:
+
+* Find a set of basic operations that your generic algorithm or data container can use to process the data.
+* Define an `interface` containing these operations.
+* To 'instantiate' your generic entity on a given data type, implement the interface methods for that type.
+
+The `sort` package is an example for this technique. It contains a sort interface (appropriately called `sort.Interface`) that declares three methods:
+
+```go
+Len() int
+Less(i, j int) bool
+Swap(i, j int)
+```
+
+By just implementing these three methods for a data container (say, a slice of structs), `sort.Sort()` can be
+applied to any kind of data, as long as the data has a reasonable definition of 'less than'.
+
+The code of `sort.Sort()` does not know anything about the data it sorts, and actually it does not have to. It simply relies on the three interface methods `Len`, `Less`, and `Swap`.
+
+
 
 ### 4. Use reflection
+
 
 
 ### 5. Use code generators
