@@ -166,7 +166,6 @@ applied to any kind of data, as long as the data has a reasonable definition of 
 The code of `sort.Sort()` does not know anything about the data it sorts, and actually it does not have to. It simply relies on the three interface methods `Len`, `Less`, and `Swap`.
 
 
-TODO: Add a quick sample code
 */
 
 // Imports and globals
@@ -222,7 +221,6 @@ Remember the *generic dilemma* from the 'downsides' section? The technique discu
 
 Reflection allows a program to work with objects whose types are not known at compile time. This sounds like a good fit for solving the generics problem, so let's give it a try:
 
-TODO: Sample code
 
 */
 
@@ -232,8 +230,6 @@ TODO: Sample code
 
 
 */
-
-// TODO: Sample code
 
 func main() {
 	// The interface approach:
