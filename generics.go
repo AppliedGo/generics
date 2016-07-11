@@ -135,11 +135,15 @@ This may sound like a foolish advice (and if applied improperly, it surely is), 
 
 Here is the point:
 
-Ask yourself, "How many times would I ever have to implement this generic type?" In other words, is it worth to construct a generic type when there may only be one or two actual implementations of it? In this case, the generic type is nothing but a result from over-abstracting things.
+If you plan to implement some generic library, then of course there is no way around generics. **But in all other cases, you might not necessarily need any generic abstractions at all.**
+
+Every time you think that you need to create a generic object, do a quick Litmus test: Ask yourself, "How many times would I ever have to instantiate this generic object?" In other words, is it worth to construct a generic object when there may only be one or two actual implementations of it? In this case, the generic object is nothing but a result from over-abstracting things.
 
 (At this point, I cannot help but thinking of Joel Spolsky's witty article on [Architecture Astronauts](http://www.joelonsoftware.com/articles/fog0000000018.html). Warning: the article is from 2001. Expect a couple of references to outdated software concepts of which you never may have heard if you are young enough.)
 
 An excellent real-life example can be found right in the standard library. The two packages `strings` and `bytes` have almost identical API's, yet no generics were used in the making of these packages (or so I strongly guess).
+
+Remember that this article tries to remain neutral and takes no stand on generics. I don't want to indicate that copy&paste is better than generics. I only want to encourage you to seek out other options even if they look strange at a first glance.
 
 
 ### 3. Use interfaces
@@ -168,12 +172,13 @@ The code of `sort.Sort()` does not know anything about the data it sorts, and ac
 
 */
 
-// Imports and globals
+// Imports and globals (also for the examples from the sections further down)
 package main
 
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"sort"
 )
 
@@ -205,27 +210,89 @@ func (p points) Swap(i, j int) {
 	p[i], p[j] = p[j], p[i]
 }
 
-// These few lines turn the `points` slice type into a sortable one. Here is an example.
+// Let's sort some points.
 func sortExample() {
 	p := points{{7, 9}, {-3, 3}, {5, -8}, {0, 4}}
 	sort.Sort(p)
-	fmt.Println("sort.Sort(p): ", p)
+	fmt.Println("sortExample: ", p)
 }
 
 /*
 
+### 4. Use type assertions
 
-### 4. Use reflection
+Generic container types usually do not need to care much about the actual type of their contents. (Except maybe for basic operations like sorting, but we already know a solution for that.) Hence the value can be stored in the container as a 'type without properties'. Such a type is already built into Go: It is the empty interface, declared as `interface{}`. This interface has no particular behavior, hence objects with any behavior satisfy this interface.
 
-Remember the *generic dilemma* from the 'downsides' section? The technique discussed below is probably the manifestation of the "slow execution times" option: Reflection.
-
-Reflection allows a program to work with objects whose types are not known at compile time. This sounds like a good fit for solving the generics problem, so let's give it a try:
-
+It is quite easy to build a container type based on `interface{}`. We only need a way to recover the actual data type when reading elements from the container. For that purpose, Go has type assertions. Here is an example:
 
 */
 
+// list is a generic container, accepting anything.
+type list []interface{}
+
+// Put adds an element to the container.
+func (l *list) Put(elem interface{}) {
+	*l = append(*l, elem)
+}
+
+// Get gets an element from the container.
+func (l *list) Get() interface{} {
+	elem := (*l)[0]
+	*l = (*l)[1:]
+	return elem
+}
+
+// The calling code does the type assertion when retrieving an element.
+func assertExample() {
+	intContainer := &list{}
+	intContainer.Put(7)
+	intContainer.Put(42)
+	elem, ok := intContainer.Get().(int) // assert that the actual type is int
+	if !ok {
+		fmt.Println("Unable to read an int from intContainer")
+	}
+	fmt.Printf("assertExample: %d (%T)\n", elem, elem)
+}
+
 /*
-### 5. Use code generators
+
+This looks so straightforward that we might easily forget the cons of this technique. We give up compile-time type checking here, exposing the application to increased risk of type-related failure at runtime. Also, conversions to and from interfaces come with a cost.
+
+
+### 5. Use reflection
+
+Remember the *generic dilemma* from the 'downsides' section? One option was "slow execution times". The technique discussed below is a manifestation of this option. Yes, I am talking about reflection.
+
+Reflection allows a program to work with objects whose types are not known at compile time. This sounds like a good fit for solving the generics problem, so let's give it a try.
+
+*/
+
+// Container can hold anything that satisfies the empty interface.
+type Container []interface{}
+
+func NewContainer(t reflect.Type) *Container {
+	return nil
+}
+
+// Set sets the element at index i to the passed-in value.
+func (c *Container) Set(i int, val interface{}) {
+}
+
+// Get gets the element at index i.
+func (c *Container) Get(i int) interface{} {
+	return (*c)[i]
+}
+
+//
+func reflectExample() {
+	//c := NewContainer(float64)
+	//c.Put(0, 1.2345)
+	//f := c.Get(0).ValueOf(float64)
+	//fmt.Println(f)
+}
+
+/*
+### 6. Use a code generator
 
 
 
@@ -234,4 +301,26 @@ Reflection allows a program to work with objects whose types are not known at co
 func main() {
 	// The interface approach:
 	sortExample()
+
+	// The type assertion approach:
+	assertExample()
+
+	// The reflection approach:
+
+	// The code generator approach:
 }
+
+/*
+## Conclusion
+
+
+
+
+
+# A brief announcement about this blog
+
+While this blog is only a few weeks old, early readers may already have noticed that the articles were always published quite regularly, once a week on Thursdays or Fridays. And from the beginning I strived to provide quality content that has a real benefit to the reader--even if it is just some sort of aha experience.
+
+Now life is usually filled with many duties, and right now they start piling up again, forcing me to either publish smaller articles, or to publish less often. As I don't want to compromise quality, I decided to change the schedule to bi-weekly. So starting this Thursday, new articles will appear every fortnight, (Although I would not rule out that once in a while I may return to a weekly schedule; for example, when posting an article series.)
+
+*/
