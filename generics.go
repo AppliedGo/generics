@@ -111,6 +111,25 @@ While generics may come in handy, they also have some strings attached.
 
 As we all know, Go has deliberately been designed with simplicity in mind, and generics are considered to add complexity to a language (see the previous section). So along with inheritance, polymorphism, and some other features of the 'state of the art' languages at that time, generics were also left off from the list.
 
+### Actually, Go does have *some* generics--sort of
+
+There are indeed a few generic language constructs in Go.
+
+First, there are three generic data types you can make use of (and probably already did so without noticing):
+
+* arrays
+* slices
+* maps
+
+All of these can be instantiated on arbitrary element types. For the `map` type, this is even true for both the key and the value. This makes maps quite versatile. For example, `map[string]struct{}` can be used as a Set type where every element is unique.
+
+Second, some built-in functions operate on a range of data types, which makes them almost act like generic functions,for example:
+
+* `len()` works with strings, arrays, slices, and maps.
+* `append()` and `copy()` can be applied on slices of any element type.
+
+Although these types and functions are definitely not 'the real thing', don't underestimate their usefulness.
+
 
 ## But what if a project just seems to cry for generics?
 
@@ -256,38 +275,43 @@ func assertExample() {
 
 /*
 
-This looks so straightforward that we might easily forget the cons of this technique. We give up compile-time type checking here, exposing the application to increased risk of type-related failure at runtime. Also, conversions to and from interfaces come with a cost.
+This looks so straightforward that we might easily forget the downsides of this technique. We give up compile-time type checking here, exposing the application to increased risk of type-related failure at runtime. Also, conversions to and from interfaces come with a cost.
 
 
 ### 5. Use reflection
 
 Remember the *generic dilemma* from the 'downsides' section? One option was "slow execution times". The technique discussed below is a manifestation of this option. Yes, I am talking about reflection.
 
-Reflection allows a program to work with objects whose types are not known at compile time. This sounds like a good fit for solving the generics problem, so let's give it a try.
+Reflection allows a program to work with objects whose types are not known at compile time. Putting performance concerns aside, this sounds like a good fit for solving the generics problem, so let's give it a try.
 
 */
 
-// Container can hold anything that satisfies the empty interface.
-type Container []interface{}
+// Container starts as a `reflect.Value` but will turn into a typed slice later.
+type Container []reflect.Value
 
-func NewContainer(t reflect.Type) *Container {
-	return nil
+func NewContainer(t reflect.Type) Container {
+	return MakeSlice(t, 0, 10) // cap is arbitrary
 }
 
 // Set sets the element at index i to the passed-in value.
-func (c *Container) Set(i int, val interface{}) {
+func (c *Container) Put(i int, val interface{}) {
+	if reflect.TypeOf(val) != reflect.TypeOf(c.Elem()) {
+		panic("Wrong type! Expected: %T, got: %T", val, c.Elem())
+	}
+	append(c, val)
 }
 
 // Get gets the element at index i.
 func (c *Container) Get(i int) interface{} {
-	return (*c)[i]
+	return (*c)[i].Interface()
 }
 
 //
 func reflectExample() {
-	//c := NewContainer(float64)
-	//c.Put(0, 1.2345)
-	//f := c.Get(0).ValueOf(float64)
+	f := 3.14
+	c := NewContainer(reflect.TypeOf(f))
+	c.Put(0, f)
+	f := c.Get(0)
 	//fmt.Println(f)
 }
 
@@ -298,16 +322,11 @@ func reflectExample() {
 
 */
 
+// Run all examples.
 func main() {
-	// The interface approach:
 	sortExample()
-
-	// The type assertion approach:
 	assertExample()
-
-	// The reflection approach:
-
-	// The code generator approach:
+	reflectExample()
 }
 
 /*
