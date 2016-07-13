@@ -284,38 +284,61 @@ Remember the *generic dilemma* from the 'downsides' section? One option was "slo
 
 Reflection allows a program to work with objects whose types are not known at compile time. Putting performance concerns aside, this sounds like a good fit for solving the generics problem, so let's give it a try.
 
+The code below implements a simple generic container. You can see a lot of type checking going on via the `reflect` package. Worth noting: A couple of standard operations do not work on variables of type `reflect.Value` even if the actual type would allow this operation. You need to substitute these operations with methods from `reflect`. I added comments to the parts of the code where this occurs.
+
 */
 
-// Container starts as a `reflect.Value` but will turn into a typed slice later.
-type Container []reflect.Value
+// Container has one field, `s`, that holds a slice of a given type.
+type Container struct {
+	s reflect.Value
+}
 
-func NewContainer(t reflect.Type) Container {
-	return MakeSlice(t, 0, 10) // cap is arbitrary
+// NewContainer creates a new Container struct where `s` holds a slice of type `[]t`. Formally, `s` remains a `reflect.Value` as defined in the struct. The code needs to deal with that fact in some places below.
+func NewContainer(t reflect.Type) *Container {
+	return &Container{
+		s: reflect.MakeSlice(reflect.SliceOf(t), 0, 10), // cap is arbitrary
+	}
 }
 
 // Set sets the element at index i to the passed-in value.
 func (c *Container) Put(i int, val interface{}) {
-	if reflect.TypeOf(val) != reflect.TypeOf(c.Elem()) {
-		panic("Wrong type! Expected: %T, got: %T", val, c.Elem())
+	// The passed-in `val` must match the type of the elements of slice `s`. Otherwise, Put panics, as this is a programmer error.
+	if reflect.ValueOf(val).Type() != c.s.Type().Elem() {
+		panic(fmt.Sprintf("Put: cannot put a %T into a slice of %s", val, c.s.Type().Elem()))
 	}
-	append(c, val)
+	// `AppendSlice` is a replacement for the builtin `append` function, which fails on a `reflect.Value` even if the actual value's type is a slice.
+	c.s = reflect.Append(c.s, reflect.ValueOf(val))
 }
 
-// Get gets the element at index i.
-func (c *Container) Get(i int) interface{} {
-	return (*c)[i].Interface()
+// Get gets the element at index `i`. There is no way (or so it seems) to have a function return a `reflect.Value` type that turns into the actual type of the returned data. Hence the Get function has a second parameter that must be a reference of the receiving variable. See `reflectExample()`.
+func (c *Container) Get(i int, retval interface{}) {
+	// `Index(i)` replaces the index operator `[i]` as `s` is only a reflect.Value (even though it effectively contains a slice).
+	retval = c.s.Index(i)
 }
 
 //
 func reflectExample() {
-	f := 3.14
+	f := 3.14152
 	c := NewContainer(reflect.TypeOf(f))
+	// Try c.Put(0, "blabla") to see the type check panicking
 	c.Put(0, f)
-	f := c.Get(0)
-	//fmt.Println(f)
+	// The syntax `f = c.Get(0)` is not possible, see the comment on `Get()`.
+	c.Get(0, &f)
+	fmt.Printf("reflectExample: %f (%T)\n", f, f)
 }
 
 /*
+Frankly, I really had a hard time wrapping my head around the semantics of the `reflect` package. 😓
+
+And it turned out that when moving from real types to the level of `reflect.Value` and `reflect.Type`, a couple of things are not possible anymore. E.g., you need replacement functions for `append()`, the `[i]` operator, etc, and there is no way to return a `reflect.Value` and have it magically turn into the actual type that it contains.
+
+I feel that I have put most of the time of writing this article into the Reflection code. A Go proverb says, "Clear is better than clever", but this code is not only anything but clear, it is also far from being clever.
+
+My $0.02 on generics through reflection?
+
+Avoid.
+
+
 ### 6. Use a code generator
 
 
