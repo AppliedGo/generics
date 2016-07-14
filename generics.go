@@ -1,4 +1,8 @@
-//go:generate genny -in=capsule/capsule.go -out=capsule/uint32capsule.go gen "Item=uint32"
+package main //go:generate genny -in=capsule/capsule.go -out=capsule/uint32capsule.go gen "Item=uint32"
+import (
+	"fmt"
+	"reflect"
+)
 
 /*
 <!--
@@ -94,7 +98,7 @@ While generics may come in handy, they also have some strings attached.
 
 	(The 'slow programmers' part refers to having no generics at all, nor any suitable substitute.)
 
-2. **Complexity**: Generics are not complex *per se*, but they can become complex when integrated with other language features such as inheritance, or when devlopers start creating nested generics like,
+2. **Complexity**: Generics are not complex *per se*, but they can become complex when integrated with other language features such as inheritance, or when developers start creating nested generics like,
 
 	```C#
 	// C#
@@ -127,7 +131,7 @@ First, there are three generic data types you can make use of (and probably alre
 
 All of these can be instantiated on arbitrary element types. For the `map` type, this is even true for both the key and the value. This makes maps quite versatile. For example, `map[string]struct{}` can be used as a Set type where every element is unique.
 
-Second, some built-in functions operate on a range of data types, which makes them almost act like generic functions.For example, `len()` works with strings, arrays, slices, and maps.
+Second, some built-in functions operate on a range of data types, which makes them almost act like generic functions. For example, `len()` works with strings, arrays, slices, and maps.
 
 Although this is definitely not 'the real thing', chances are that those 'internal generics' already cover your needs.
 
@@ -158,7 +162,7 @@ Here is the point:
 
 Every time you think that you need to create a generic object, do a quick Litmus test: Ask yourself, "How many times would I ever have to instantiate this generic object in my application or library?" In other words, is it worth to construct a generic object when there may only be one or two actual implementations of it? In this case, creating a generic object would just be an over-abstraction.
 
-(At this point, I cannot help but thinking of Joel Spolsky's witty article on [Architecture Astronauts](http://www.joelonsoftware.com/articles/fog0000000018.html). Warning: the article is from 2001. Expect a couple of references to outdated software concepts of which you never may have heard if you are young enough.)
+(At this point, I cannot help but thinking of Joel Spolsky's witty article on [Architecture Astronauts](http://www.joelonsoftware.com/articles/fog0000000018.html) who build abstractions on top of other abstractions until they run out of oxygen. (Small caveat: the article is from 2001. Expect a couple of references to outdated software concepts of which you never may have heard if you are young enough.)) *<-- Yes, I nested two parens here. So?*
 
 An excellent real-life example can be found right in the standard library. The two packages `strings` and `bytes` have almost identical API's, yet no generics were used in the making of these packages (or so I strongly guess).
 
@@ -186,67 +190,22 @@ type Interface interface {
 By just implementing these three methods for a data container (say, a slice of structs), `sort.Sort()` can be
 applied to any kind of data, as long as the data has a reasonable definition of 'less than'.
 
-The code of `sort.Sort()` does not know anything about the data it sorts, and actually it does not have to. It simply relies on the three interface methods `Len`, `Less`, and `Swap`.
+A nice aspect here is that the code of `sort.Sort()` does not know anything about the data it sorts, and actually it does not have to. It simply relies on the three interface methods `Len`, `Less`, and `Swap`.
 
+There are already a couple of examples in the [sort package doc](https://golang.org/pkg/sort/), and the following technique makes heavy use of an empty interface, so I'll skip the code part and move right on to type assertions.
 
-*/
-
-// Imports and globals (also for the examples from the sections further down)
-package main
-
-import (
-	"fmt"
-	"math"
-	"reflect"
-	"sort"
-)
-
-// point is a 2-dimensional point with Cartesian coordinates.
-type point struct {
-	x, y float64
-}
-
-// Dist is the point's distance to (0,0).
-func (p point) Dist() float64 {
-	return math.Sqrt(p.x*p.x + p.y*p.y) // good old Pythagoras
-}
-
-// points is our point container. We want to implement the generic sort.Sort() for this.
-type points []point
-
-// Len is just point's len().
-func (p points) Len() int {
-	return len(p)
-}
-
-// Less returns true if the point at index i is closer to (0,0) than the point at index j.
-func (p points) Less(i, j int) bool {
-	return p[i].Dist() < p[j].Dist()
-}
-
-// Swap is a simple slice swap.
-func (p points) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
-}
-
-// Let's sort some points.
-func sortExample() {
-	p := points{{7, 9}, {-3, 3}, {5, -8}, {0, 4}}
-	sort.Sort(p)
-	fmt.Println("sortExample: ", p)
-}
-
-/*
 
 ### 4. Use type assertions
 
-Generic container types usually do not need to care much about the actual type of their contents. (Except maybe for basic operations like sorting, but we already know a solution for that.) Hence the value can be stored in the container as a 'type without properties'. Such a type is already built into Go: It is the empty interface, declared as `interface{}`. This interface has no particular behavior, hence objects with any behavior satisfy this interface.
+Generic container types usually do not need to care much about the actual type of their contents. (Except maybe for basic operations like sorting, but we already know a solution for that.) Hence the value can be stored in the container as a 'type without properties'. Such a type is already built into Go: the empty interface, declared as `interface{}`. This interface has no particular behavior, hence objects with any behavior satisfy this interface.
 
-It is quite easy to build a container type based on `interface{}`. We only need a way to recover the actual data type when reading elements from the container. For that purpose, Go has type assertions. Here is an example:
+It is quite easy to build a container type based on `interface{}`. We only need a way to recover the actual data type when reading elements from the container. For that purpose, Go has type assertions. Here is an example that implements a generic container object.
+
+To keep the code short and concise, the container object is kept super-simple. It features only two methods, Put and Get.
 
 */
 
-// list is a generic container, accepting anything.
+// `Container` is a generic container, accepting anything.
 type Container []interface{}
 
 // Put adds an element to the container.
@@ -288,7 +247,7 @@ The code below implements a simple generic container. You can see a lot of type 
 
 */
 
-// Container has one field, `s`, that holds a slice of a given type.
+// Cabinet has one field, `s`, that holds a slice of a given type. (As the name `Container` is already taken, I had to choose another name.)
 type Cabinet struct {
 	s reflect.Value
 }
@@ -311,9 +270,9 @@ func (c *Cabinet) Put(val interface{}) {
 }
 
 // Get gets the element at index `i`. There is no way (or so it seems) to have a function return a `reflect.Value` type that turns into the actual type of the returned data. Hence the Get function has a second parameter that must be a reference of the receiving variable. See `reflectExample()`.
-func (c *Cabinet) Get(retval interface{}) {
+func (c *Cabinet) Get(retref interface{}) {
 	// `Index(i)` replaces the index operator `[i]` as `s` is only a reflect.Value (even though it effectively contains a slice).
-	retval = c.s.Index(0)
+	retref = c.s.Index(0)
 	c.s = c.s.Slice(1, c.s.Len())
 }
 
@@ -330,9 +289,9 @@ func reflectExample() {
 }
 
 /*
-Frankly, I really had a hard time wrapping my head around the semantics of the `reflect` package. 😓
+Frankly, I really had a hard time wrapping my head around the semantics of the `reflect` package until I got this code running. 😓
 
-And it turned out that when moving from real types to the level of `reflect.Value` and `reflect.Type`, a couple of things are not possible anymore. E.g., you need replacement functions for `append()`, the `[i]` operator, etc, and there is no way to return a `reflect.Value` and have it magically turn into the actual type that it contains.
+And I realized that when moving from real types to the level of `reflect.Value` and `reflect.Type`, a couple of things are not possible anymore. For example, you need replacement functions for `append()`, the `[i]` operator, etc, and there is no way to return a `reflect.Value` and have it magically turn into the actual type that it contains. (That's why `Get()` needs to receive a reference to fill with the return value.)
 
 I feel that I have put most of the time of writing this article into the Reflection code. A Go proverb says, "Clear is better than clever", but this code is not only anything but clear, it is also far from being clever.
 
@@ -383,7 +342,7 @@ func (c *ItemCapsule) Get() Item {
 	return r
 }
 ```
-(Find this file in `capsule/capsule.go`.)
+(When you `go get` the code of this article, this template code is in `capsule/capsule.go`.)
 
 In the main file, `generics.go`, we want to have a Capsule containing uint32 elements. So we place a `go:generate` directive at the top of the file:
 
@@ -413,7 +372,7 @@ func (c *Uint32Capsule) Get() uint32 {
 	return r
 }
 
-// The example function looks as if the Uint32Capsule was handcoded. Everything is just plain, clear, idiomatic Go.
+// Now we can write the calling function as if the Uint32Capsule was handcoded. Everything is just plain, clear, idiomatic Go.
 func generateExample() {
 	var u uint32 = 42
 	c := NewUint32Capsule()
@@ -422,20 +381,87 @@ func generateExample() {
 	fmt.Printf("generateExample: %d (%T)\n", v, v)
 }
 
-// Run all examples.
+/* For completness of our test code, here is the `main` function.
+ */
+
+// `main` simply runs all examples.
 func main() {
-	sortExample()
 	assertExample()
 	reflectExample()
 	generateExample()
 }
 
 /*
-## Conclusion
+
+Get the complete test code from GitHub:
+
+		go get -d github.com/appliedgo/generics
+		cd $GOPATH/src/github.com/appliedgo/generics
+		go build
+		./generics
+
+You don't need to get `genny` nor run `go generate` if you just want to run the examples in `generics.go`. The code generated by `genny` is included in generics.go.
 
 
+## Summary
+
+Let me do a quick roundup of the examined techniques.
+
+### Requirements review
+
+* Pro: Makes you think about your design.
+* Con: Likely to apply to only a small set of problem types.
+
+### Copy&Paste
+
+* Pros:
+	* Quick
+	* Needs no external libraries or tools
+* Cons:
+	* Code bloat
+	* Breaks the [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) principle
+
+### Interfaces (with methods)
+
+* Pros:
+	* Clean and idiomatic
+	* Needs no external libraries or tools
+* Cons:
+	* Additional coding required - each interface method needs to be implemented for each target type.
+	* Runtime overhead (however maybe not that dramatic)
+
+### Type assertions (with empty interfaces)
+
+* Pros:
+	* Code stays quite clear
+	* Needs no external libraries or tools
+* Cons:
+	* No compile-time type checking
+	* Runtime overhead from converting to and from interfaces
+	* Caller is required to do the type assertion
+
+### Reflection
+
+* Pros:
+	* Versatile
+	* Needs no external libraries or tools
+* Cons:
+	* Anything but clear
+	* No compile-time type checking
+	* Considerable runtime overhead
+
+### Code generation
+
+* Pros:
+	* Very clear code possible (depending on the tool), both in the templates and in the generated code
+	* Compile-time type checking
+	* Some tools even allow writing tests against the generic code template
+	* No runtime overhead
+* Cons:
+	* Possible binary bloat, if a template gets instantiated many times for different target types (but how often does this happen in your apps?)
+	* The build process requires an extra step and a third party tool (but as far as I have seen, these tools usually are `go get`table)
 
 
-
+That's it for this time. I hope you enjoyed reading, even though this article ended up being quite long and without any images (sorry for that). I try to keep it shorter in the future. Until next time!
 
 */
