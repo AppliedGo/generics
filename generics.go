@@ -1,3 +1,5 @@
+//go:generate genny -in=capsule/capsule.go -out=capsule/uint32capsule.go gen "Item=uint32"
+
 /*
 <!--
 Copyright (c) 2016 Christoph Berger. Some rights reserved.
@@ -34,7 +36,7 @@ This article examines the nature of generics, and surveys various techniques tha
 
 ## First, an important note
 
-*The question about generics in Go is years old, and has been discussed up and down and forth and back across the Go forums, newsgroups, and email lists. **It is NOT the goal of this article to re-ignite this discussion.** I think that all that can be said, has been said.*
+_The question about generics in Go is years old, and has been discussed up and down and forth and back across the Go forums, newsgroups, and email lists. **It is NOT the goal of this article to re-ignite this discussion.** I think that all that can be said, has been said._
 
 *Fact is, the concept of generics does not exist in Go.*
 
@@ -111,11 +113,11 @@ While generics may come in handy, they also have some strings attached.
 
 ## Go has no generics
 
-As we all know, Go has deliberately been designed with simplicity in mind, and generics are considered to add complexity to a language (see the previous section). So along with inheritance, polymorphism, and some other features of the 'state of the art' languages at that time, generics were also left off from the list.
+As we all know, Go has deliberately been designed with simplicity in mind, and generics are considered to add complexity to a language (see the previous section). So along with inheritance, polymorphism, and some other features of the 'state of the art' languages at that time, generics were left off from Go's feature list.
 
-### Actually, Go does have *some* generics--sort of
+### Actually, Go does have *some* generics--sort of...
 
-There are indeed a few generic language constructs in Go.
+There are indeed a few 'generic' language constructs in Go.
 
 First, there are three generic data types you can make use of (and probably already did so without noticing):
 
@@ -245,23 +247,23 @@ It is quite easy to build a container type based on `interface{}`. We only need 
 */
 
 // list is a generic container, accepting anything.
-type list []interface{}
+type Container []interface{}
 
 // Put adds an element to the container.
-func (l *list) Put(elem interface{}) {
-	*l = append(*l, elem)
+func (c *Container) Put(elem interface{}) {
+	*c = append(*c, elem)
 }
 
 // Get gets an element from the container.
-func (l *list) Get() interface{} {
-	elem := (*l)[0]
-	*l = (*l)[1:]
+func (c *Container) Get() interface{} {
+	elem := (*c)[0]
+	*c = (*c)[1:]
 	return elem
 }
 
 // The calling code does the type assertion when retrieving an element.
 func assertExample() {
-	intContainer := &list{}
+	intContainer := &Container{}
 	intContainer.Put(7)
 	intContainer.Put(42)
 	elem, ok := intContainer.Get().(int) // assert that the actual type is int
@@ -273,12 +275,12 @@ func assertExample() {
 
 /*
 
-This looks so straightforward that we might easily forget the downsides of this technique. We give up compile-time type checking here, exposing the application to increased risk of type-related failure at runtime. Also, conversions to and from interfaces come with a cost.
+This looks so straightforward that we might easily forget the downsides of this technique. We give up compile-time type checking here, exposing the application to increased risk of type-related failure at runtime. Also, conversions to and from interfaces come with a cost. And finally, all 'magic' happens outside our Container type, at the caller's level. Usually you would rather want a technique that hides the type conversion mechanisms from the caller.
 
 
 ### 5. Use reflection
 
-Remember the *generic dilemma* from the 'downsides' section? One option was "slow execution times". The technique discussed below is a manifestation of this option. Yes, I am talking about reflection.
+Remember the *generic dilemma* from the 'downsides' section? One of the three options to pick from was "slow execution times". The technique discussed below is a manifestation of this option. Yes, I am talking about reflection.
 
 Reflection allows a program to work with objects whose types are not known at compile time. Putting performance concerns aside, this sounds like a good fit for solving the generics problem, so let's give it a try.
 
@@ -287,19 +289,19 @@ The code below implements a simple generic container. You can see a lot of type 
 */
 
 // Container has one field, `s`, that holds a slice of a given type.
-type Container struct {
+type Cabinet struct {
 	s reflect.Value
 }
 
-// NewContainer creates a new Container struct where `s` holds a slice of type `[]t`. Formally, `s` remains a `reflect.Value` as defined in the struct. The code needs to deal with that fact in some places below.
-func NewContainer(t reflect.Type) *Container {
-	return &Container{
-		s: reflect.MakeSlice(reflect.SliceOf(t), 0, 10), // cap is arbitrary
+// NewCabinet creates a new Cabinet struct where `s` holds a slice of type `[]t`. Formally, `s` remains a `reflect.Value` as defined in the struct. The code needs to deal with that fact in some places below.
+func NewCabinet(t reflect.Type) *Cabinet {
+	return &Cabinet{
+		s: reflect.MakeSlice(reflect.SliceOf(t), 0, 10), // cap is arbitrary, we need to pass one here
 	}
 }
 
 // Set sets the element at index i to the passed-in value.
-func (c *Container) Put(i int, val interface{}) {
+func (c *Cabinet) Put(val interface{}) {
 	// The passed-in `val` must match the type of the elements of slice `s`. Otherwise, Put panics, as this is a programmer error.
 	if reflect.ValueOf(val).Type() != c.s.Type().Elem() {
 		panic(fmt.Sprintf("Put: cannot put a %T into a slice of %s", val, c.s.Type().Elem()))
@@ -309,20 +311,22 @@ func (c *Container) Put(i int, val interface{}) {
 }
 
 // Get gets the element at index `i`. There is no way (or so it seems) to have a function return a `reflect.Value` type that turns into the actual type of the returned data. Hence the Get function has a second parameter that must be a reference of the receiving variable. See `reflectExample()`.
-func (c *Container) Get(i int, retval interface{}) {
+func (c *Cabinet) Get(retval interface{}) {
 	// `Index(i)` replaces the index operator `[i]` as `s` is only a reflect.Value (even though it effectively contains a slice).
-	retval = c.s.Index(i)
+	retval = c.s.Index(0)
+	c.s = c.s.Slice(1, c.s.Len())
 }
 
 //
 func reflectExample() {
 	f := 3.14152
-	c := NewContainer(reflect.TypeOf(f))
+	g := 0.0
+	c := NewCabinet(reflect.TypeOf(f))
 	// Try c.Put(0, "blabla") to see the type check panicking
-	c.Put(0, f)
-	// The syntax `f = c.Get(0)` is not possible, see the comment on `Get()`.
-	c.Get(0, &f)
-	fmt.Printf("reflectExample: %f (%T)\n", f, f)
+	c.Put(f)
+	// The syntax `g = c.Get(0)` is not possible, see the comment on `Get()`.
+	c.Get(&g)
+	fmt.Printf("reflectExample: %f (%T)\n", g, g)
 }
 
 /*
@@ -339,16 +343,91 @@ Avoid.
 
 ### 6. Use a code generator
 
+Far better than reflection IMHO is code generation. The concept is rather simple:
 
+* Write a template file that uses generic 'mock' types. These types are just placeholders for the real types.
+* Run the file through a converter. The converter identifies the mock types and replaces them by real types.
 
+To illustrate this, here is a quick walkthrough using [genny](https://github.com/cheekybits/genny). (There are also other converters with similar features out there, like [generic](https://github.com/taylorchu/generic), [gengen](https://github.com/joeshaw/gengen), [gen](https://github.com/clipperhouse/gen), and more.)
 
+So let's write another generic container. Whenever we need a generic type, we can declare one like so:
+
+```go
+type APlaceholder generic.Type
+```
+
+`APlaceholder` then can be used in the template code like any other type. The template code compiles without problems, and it is even possible to write tests against this code. This is how our container template looks like:
+
+```go
+package capsule
+
+import "github.com/cheekybits/genny/generic"
+
+type Item generic.Type
+
+type ItemCapsule struct {
+	s []Item
+}
+
+func NewItemCapsule() *ItemCapsule {
+	return &ItemCapsule{s: []Item{}}
+}
+
+func (c *ItemCapsule) Put(val Item) {
+	c.s = append(c.s, val)
+}
+
+func (c *ItemCapsule) Get() Item {
+	r := c.s[0]
+	c.s = c.s[1:]
+	return r
+}
+```
+(Find this file in `capsule/capsule.go`.)
+
+In the main file, `generics.go`, we want to have a Capsule containing uint32 elements. So we place a `go:generate` directive at the top of the file:
+
+	//go:generate genny -in=template.go -out=uint32capsule.go gen "Item=uint32"
+
+Before compiling the main binary, calling `go generate` executes genny, which produces an output file where `Item` is replaced by `uint32`. Note that this also applies to names that contain the string 'Item' - like 'ItemCapsule' in our example. This way, it is possible to create multiple replacements from the same template without name conflicts. (For example, a Uint32Capsule and a StringCapsule.)
+
+After running `go generate generics.go`, we can find the file `uint32capsule.go` in the project dir with the following code:
 */
+
+// Generated code
+type Uint32Capsule struct {
+	s []uint32
+}
+
+func NewUint32Capsule() *Uint32Capsule {
+	return &Uint32Capsule{s: []uint32{}}
+}
+
+func (c *Uint32Capsule) Put(val uint32) {
+	c.s = append(c.s, val)
+}
+
+func (c *Uint32Capsule) Get() uint32 {
+	r := c.s[0]
+	c.s = c.s[1:]
+	return r
+}
+
+// The example function looks as if the Uint32Capsule was handcoded. Everything is just plain, clear, idiomatic Go.
+func generateExample() {
+	var u uint32 = 42
+	c := NewUint32Capsule()
+	c.Put(u)
+	v := c.Get()
+	fmt.Printf("generateExample: %d (%T)\n", v, v)
+}
 
 // Run all examples.
 func main() {
 	sortExample()
 	assertExample()
 	reflectExample()
+	generateExample()
 }
 
 /*
@@ -358,10 +437,5 @@ func main() {
 
 
 
-# A brief announcement about this blog
-
-While this blog is only a few weeks old, early readers may already have noticed that the articles were always published quite regularly, once a week on Thursdays or Fridays. And from the beginning I strived to provide quality content that has a real benefit to the reader--even if it is just some sort of aha experience.
-
-Now life is usually filled with many duties, and right now they start piling up again, forcing me to either publish smaller articles, or to publish less often. As I don't want to compromise quality, I decided to change the schedule to bi-weekly. So starting this Thursday, new articles will appear every fortnight, (Although I would not rule out that once in a while I may return to a weekly schedule; for example, when posting an article series.)
 
 */
