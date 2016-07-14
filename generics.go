@@ -19,8 +19,8 @@ title = "Who needs generics? Use ... instead!"
 description = "The Go language has no generics. This article is a survey of techniques that can be used instead."
 author = "Christoph Berger"
 email = "chris@appliedgo.net"
-date = "2016-07-07"
-publishdate = "2016-07-07"
+date = "2016-07-14"
+publishdate = "2016-07-14"
 domains = ["Patterns and Paradigms"]
 tags = ["generics", "interface", "reflection", "code generation"]
 categories = ["Essay"]
@@ -34,11 +34,13 @@ This article examines the nature of generics, and surveys various techniques tha
 
 ## First, an important note
 
-*The question about generics in Go is years old, and has been discussed up and down and forth and back across the Go forums, newsgroups, and email lists. It is NOT the goal of this article to spark this discussion once again. I think that all that can be said, has been said.*
+*The question about generics in Go is years old, and has been discussed up and down and forth and back across the Go forums, newsgroups, and email lists. **It is NOT the goal of this article to re-ignite this discussion.** I think that all that can be said, has been said.*
 
 *Fact is, the concept of generics does not exist in Go.*
 
 *This article solely focuses on alternate ways of achieving some of the goals that other languages try to solve with generics.*
+
+***A good summary of the state of the discussion is [here](https://docs.google.com/document/d/1vrAy9gMpMoS3uaVphB32uVXX4pi-HnNjkMEgyAHX4N4/edit?usp=sharing).***
 
 Let's start by briefly looking at the motivation for generics as well as the possible downsides.
 
@@ -123,12 +125,9 @@ First, there are three generic data types you can make use of (and probably alre
 
 All of these can be instantiated on arbitrary element types. For the `map` type, this is even true for both the key and the value. This makes maps quite versatile. For example, `map[string]struct{}` can be used as a Set type where every element is unique.
 
-Second, some built-in functions operate on a range of data types, which makes them almost act like generic functions,for example:
+Second, some built-in functions operate on a range of data types, which makes them almost act like generic functions.For example, `len()` works with strings, arrays, slices, and maps.
 
-* `len()` works with strings, arrays, slices, and maps.
-* `append()` and `copy()` can be applied on slices of any element type.
-
-Although these types and functions are definitely not 'the real thing', don't underestimate their usefulness.
+Although this is definitely not 'the real thing', chances are that those 'internal generics' already cover your needs.
 
 
 ## But what if a project just seems to cry for generics?
@@ -152,11 +151,10 @@ So think of the paradigms that come with Go--most notably composition and embedd
 
 This may sound like a foolish advice (and if applied improperly, it surely is), but do not hastily reject it.
 
+
 Here is the point:
 
-If you plan to implement some generic library, then of course there is no way around generics. **But in all other cases, you might not necessarily need any generic abstractions at all.**
-
-Every time you think that you need to create a generic object, do a quick Litmus test: Ask yourself, "How many times would I ever have to instantiate this generic object?" In other words, is it worth to construct a generic object when there may only be one or two actual implementations of it? In this case, the generic object is nothing but a result from over-abstracting things.
+Every time you think that you need to create a generic object, do a quick Litmus test: Ask yourself, "How many times would I ever have to instantiate this generic object in my application or library?" In other words, is it worth to construct a generic object when there may only be one or two actual implementations of it? In this case, creating a generic object would just be an over-abstraction.
 
 (At this point, I cannot help but thinking of Joel Spolsky's witty article on [Architecture Astronauts](http://www.joelonsoftware.com/articles/fog0000000018.html). Warning: the article is from 2001. Expect a couple of references to outdated software concepts of which you never may have heard if you are young enough.)
 
@@ -340,6 +338,7 @@ Avoid.
 
 
 ### 6. Use a code generator
+
 
 
 
