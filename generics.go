@@ -42,11 +42,9 @@ This article examines the nature of generics, and surveys various techniques tha
 
 _The question about generics in Go is years old, and has been discussed up and down and forth and back across the Go forums, newsgroups, and email lists. **It is NOT the goal of this article to re-ignite this discussion.** I think that all that can be said, has been said._
 
-*Fact is, the concept of generics does not exist in Go.*
+*A good summary of the state of the discussion is [here](https://docs.google.com/document/d/1vrAy9gMpMoS3uaVphB32uVXX4pi-HnNjkMEgyAHX4N4/edit?usp=sharing).*
 
-*This article solely focuses on alternate ways of achieving some of the goals that other languages try to solve with generics.*
-
-***A good summary of the state of the discussion is [here](https://docs.google.com/document/d/1vrAy9gMpMoS3uaVphB32uVXX4pi-HnNjkMEgyAHX4N4/edit?usp=sharing).***
+***This article solely focuses on alternate ways of achieving some of the goals that other languages try to solve with generics.***
 
 Let's start by briefly looking at the motivation for generics as well as the possible downsides.
 
