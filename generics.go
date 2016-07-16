@@ -40,7 +40,7 @@ This article examines the nature of generics, and surveys various techniques tha
 
 - - -
 
-**UPDATE: The "..." in the title is meant to be a plain English ellipsis!** Thank you to the readers who have pointed out that "..." in this context can (and will) be understood as Go's ellipsis. In this case the title would of course be complete rubbish.
+**UPDATE: The "..." in the title is meant to be a plain English ellipsis!** Big thanks to the readers who have pointed out that "..." in this context can (and will) be understood as Go's ellipsis. In this case the title would of course be complete rubbish.
 
 - - -
 
