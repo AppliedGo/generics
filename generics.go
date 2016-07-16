@@ -38,6 +38,9 @@ This article examines the nature of generics, and surveys various techniques tha
 
 <!--more-->
 
+**UPDATE: The "..." in the title is meant to be a plain English ellipsis!** Thank you to the readers who have pointed out that "..." in this context can (and will) be understood as Go's ellipsis. In this case the title would of course be complete rubbish.
+
+
 ## First, an important note
 
 _The question about generics in Go is years old, and has been discussed up and down and forth and back across the Go forums, newsgroups, and email lists. **It is NOT the goal of this article to re-ignite this discussion.** I think that all that can be said, has been said._
