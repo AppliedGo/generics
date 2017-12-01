@@ -42,6 +42,7 @@ This article examines the nature of generics, and surveys various techniques tha
 
 **UPDATE: The "..." in the title is meant to be a plain English ellipsis!** Big thanks to the readers who have pointed out that "..." in this context can (and will) be understood as Go's ellipsis. In this case the title would of course be complete rubbish.
 
+**UPDATE 2:** The snappy title is often misunderstood as "Go needs no generics". This is far from what the article wants to say. I do see the usefulness of generics in certain problem domains, and I am the last one to balk at the idea of generics in Go. If anyone feels misled by the title, I apologize.
 - - -
 
 ## First, an important note
