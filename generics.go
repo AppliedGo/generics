@@ -27,9 +27,9 @@ author = "Christoph Berger"
 email = "chris@appliedgo.net"
 date = "2016-07-14"
 publishdate = "2016-07-14"
-domains = ["Patterns and Paradigms"]
+categories = ["Patterns and Paradigms"]
 tags = ["generics", "interface", "reflection", "code generation"]
-categories = ["Essay"]
+articletypes = ["Essay"]
 +++
 
 What are generics? Why are they considered useful? Why does Go have no generics? What shall Gophers use instead?
@@ -107,7 +107,7 @@ While generics may come in handy, they also have some strings attached.
 
 	```C#
 	// C#
-	List<Dictionary<string<IEnumerable<HttpRequest>>>>
+	List<dictionary<string,IEnumerable<HttpRequest>>>
 	```
 
 	(Thanks to [Jonathan Oliver](http://blog.jonathanoliver.com/golang-has-generics/) for this nice example), or even seemingly recursive inheritance like,
@@ -274,7 +274,7 @@ func (c *Cabinet) Put(val interface{}) {
 	c.s = reflect.Append(c.s, reflect.ValueOf(val))
 }
 
-// Get gets the element at index `i`. There is no way (or so it seems) to have a function return a `reflect.Value` type that turns into the actual type of the returned data. Hence the Get function has a second parameter that must be a reference of the receiving variable. See `reflectExample()`.
+// Get gets the element at index `i`. There is no way (or so it seems) to have a function return a `reflect.Value` type that turns into the actual type of the returned data. Hence the Get function has got a parameter of type `interface{}` instead, and the actual argument must be a pointer to the receiving variable. See `reflectExample()`.
 func (c *Cabinet) Get(retref interface{}) {
 	// `Index(i)` replaces the index operator `[i]` as `s` is only a reflect.Value (even though it effectively contains a slice).
 	retref = c.s.Index(0)
@@ -289,6 +289,7 @@ func reflectExample() {
 	// Try c.Put(0, "blabla") to see the type check panicking
 	c.Put(f)
 	// The syntax `g = c.Get(0)` is not possible, see the comment on `Get()`.
+	fmt.Println(c.s.Index(0))
 	c.Get(&g)
 	fmt.Printf("reflectExample: %f (%T)\n", g, g)
 }
