@@ -1,4 +1,4 @@
-module main
+module github.com/appliedgo/generics
 
 go 1.13
 
